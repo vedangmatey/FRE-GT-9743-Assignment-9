@@ -1,9 +1,16 @@
 import pickle
 from typing import List, Optional
+
+import pandas as pd
+
 from fixedincomelib.date import *
 from fixedincomelib.market import *
 from fixedincomelib.product import *
-from fixedincomelib.product.non_linear_products import CapOrFloor, ProductRFRCapFloor, ProductRFRCapletFloorlet
+from fixedincomelib.product.non_linear_products import (
+    CapOrFloor,
+    ProductRFRCapFloor,
+    ProductRFRCapletFloorlet,
+)
 
 
 def qfDisplayProduct(product: Product):
@@ -26,13 +33,17 @@ def qfWriteProductToFile(product: Product, path: str):
 def qfReadProductFromFile(path: str):
     with open(path, "rb") as handle:
         this_dict = pickle.load(handle)
-        prod_type = this_dict["TYPE"]
-        func = ProductBuilderRegistry().get(f"{prod_type}_DES")
-        return func(this_dict)
+    prod_type = this_dict["TYPE"]
+    func = ProductBuilderRegistry().get(f"{prod_type}_DES")
+    return func(this_dict)
 
 
 def qfCreateProductFromDataConvention(
-    value_date: str, data_convention: str, axis1: str, values: float, **kwargs
+    value_date: str,
+    data_convention: str,
+    axis1: str,
+    values: float,
+    **kwargs,
 ):
     conv_obj = DataConventionRegistry().get(data_convention)
     return ProductFactory.create_product_from_data_convention(
@@ -47,11 +58,9 @@ def qfCreateProductBulletCashflow(
     long_or_short: str,
     payment_date: Optional[str] = "",
 ):
-
     pay_date = None
     if payment_date != "":
         pay_date = Date(payment_date)
-
     return ProductBulletCashflow(
         Date(termination_date),
         Currency(currency),
@@ -71,19 +80,15 @@ def qfCreateProducFixedAccrued(
     business_day_convention: Optional[str] = "",
     holiday_convention: Optional[str] = "",
 ):
-
     pay_date = None
     if payment_date != "":
         pay_date = Date(payment_date)
-
     business_day_convention_obj = BusinessDayConvention("F")
     if business_day_convention != "":
         business_day_convention_obj = BusinessDayConvention(business_day_convention)
-
     holiday_day_convention_obj = HolidayConvention("USGS")
     if holiday_convention != "":
         holiday_day_convention_obj = HolidayConvention(holiday_convention)
-
     return ProductFixedAccrued(
         Date(effective_date),
         Date(termination_date),
@@ -105,11 +110,9 @@ def qfCreateProductOvernightIndexCashflow(
     spread: Optional[float] = 0.0,
     payment_date: Optional[str] = "",
 ):
-
     pay_date = None
     if payment_date != "":
         pay_date = Date(payment_date)
-
     return ProductOvernightIndexCashflow(
         Date(effective_date),
         TermOrTerminationDate(term_or_terminatino_date),
@@ -129,7 +132,6 @@ def qfCreateProductRFRFuture(
     amount: float,
     strike: Optional[float] = 0.0,
 ):
-
     return ProductRFRFuture(
         Date(effective_date),
         TermOrTerminationDate(term_or_termination_date),
@@ -156,10 +158,8 @@ def qfCreateProductRFRSwap(
     spread: Optional[float] = 0.0,
     compounding_method: Optional[str] = "compound",
 ):
-
     if floating_leg_accrual_period == "":
         floating_leg_accrual_period = accrual_period
-
     return ProductRFRSwap(
         Date(effective_date),
         TermOrTerminationDate(term_or_termination_date),
@@ -194,7 +194,6 @@ def qfCreateProductOvernightIndexBasisSwap(
     pay_holiday_convention: Optional[str] = "USGS",
     compounding_method: Optional[str] = "compound",
 ):
-
     return ProductOvernightIndexBasisSwap(
         effective_date=Date(effective_date),
         term_or_termination_date=TermOrTerminationDate(term_or_termination_date),
@@ -214,19 +213,12 @@ def qfCreateProductOvernightIndexBasisSwap(
 
 
 def qfCreateBondSpecs(key: str, parameters: dict) -> BondSpecs:
-
-    # check if exists
-    # if not, register(), and get()
-
-    # otherwise, get()
     if not BondSpecsRegistry().exists(key):
         BondSpecsRegistry().register(key, parameters)
-
     return BondSpecsRegistry().get(key)
 
 
 def qfCreateProductBond(name: str, trade_date: str, buy_sell: str, trade: float) -> ProductBond:
-
     bond_specs = BondSpecsRegistry().get(name)
     return ProductBond(
         name=name,
@@ -254,15 +246,12 @@ def qfCreateProductFXForward(
     holiday_convention: Optional[str] = "",
     pay_offset: Optional[str] = "0D",
 ):
-
     business_day_convention_obj = BusinessDayConvention("F")
     if business_day_convention != "":
         business_day_convention_obj = BusinessDayConvention(business_day_convention)
-
     holiday_day_convention_obj = HolidayConvention("USGS")
     if holiday_convention != "":
         holiday_day_convention_obj = HolidayConvention(holiday_convention)
-
     return ProductFxForward(
         Date(termination_date),
         fx_pair,
@@ -274,6 +263,7 @@ def qfCreateProductFXForward(
         holiday_day_convention_obj,
         Period(pay_offset),
     )
+
 
 def qfCreateProductRFRCapletFloorlet(
     effective_date: str,
@@ -287,7 +277,6 @@ def qfCreateProductRFRCapletFloorlet(
     accrual_basis: str,
     long_or_short: Optional[str] = "LONG",
 ):
-
     return ProductRFRCapletFloorlet(
         effective_date=Date(effective_date),
         expiry_offset=Period(expiry_offset),
@@ -300,6 +289,7 @@ def qfCreateProductRFRCapletFloorlet(
         accrual_basis=AccrualBasis(accrual_basis),
         long_or_short=LongOrShort.from_string(long_or_short),
     )
+
 
 def qfCreateProductRFRCapFloor(
     effective_date: str,
@@ -317,7 +307,19 @@ def qfCreateProductRFRCapFloor(
     business_day_convention: Optional[str] = "MF",
     holiday_convention: Optional[str] = "USGS",
 ):
-
-    # TODO:
-    # return ProductRFRCapFloor product
-    pass
+    return ProductRFRCapFloor(
+        effective_date=Date(effective_date),
+        term_or_termination_date=TermOrTerminationDate(term_or_termination_date),
+        on_index=on_index,
+        strike=strike,
+        notional=notional,
+        cap_or_floor=CapOrFloor.from_string(cap_or_floor),
+        accrual_period=Period(accrual_period),
+        accrual_basis=AccrualBasis(accrual_basis),
+        payment_offset=Period(payment_offset),
+        payment_business_day_convention=BusinessDayConvention(payment_business_day_convention),
+        payment_holiday_convention=HolidayConvention(payment_holiday_convention),
+        long_or_short=LongOrShort.from_string(long_or_short),
+        business_day_convention=BusinessDayConvention(business_day_convention),
+        holiday_convention=HolidayConvention(holiday_convention),
+    )

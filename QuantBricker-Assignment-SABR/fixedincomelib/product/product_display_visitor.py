@@ -1,8 +1,9 @@
 from __future__ import annotations
-from atexit import register
-from typing import Any, Dict, List, Tuple
-import pandas as pd
+
 from functools import singledispatchmethod
+
+import pandas as pd
+
 from fixedincomelib.product.product_interfaces import Product, ProductVisitor
 from fixedincomelib.product.product_portfolio import ProductPortfolio
 from fixedincomelib.product.linear_products import (
@@ -10,7 +11,6 @@ from fixedincomelib.product.linear_products import (
     ProductFixedAccrued,
     ProductOvernightIndexBasisSwap,
     ProductFxForward,
-    ProductOvernightIndexBasisSwap,
     ProductOvernightIndexCashflow,
     ProductRFRFuture,
     ProductRFRSwap,
@@ -18,21 +18,19 @@ from fixedincomelib.product.linear_products import (
     ProductZeroSpread,
 )
 from fixedincomelib.product.non_linear_products import (
-    CapOrFloor,
     ProductRFRCapletFloorlet,
     ProductRFRCapFloor,
 )
 
 
 class ProductDisplayVisitor(ProductVisitor):
-
     def __init__(self) -> None:
         super().__init__()
         self.nvps_ = []
 
     @singledispatchmethod
     def visit(self, product: Product):
-        raise NotImplementedError(f"No visitor for {Product._product_type}")
+        raise NotImplementedError(f"No visitor for {product.product_type}")
 
     def display(self) -> pd.DataFrame:
         return pd.DataFrame(self.nvps_, columns=["Name", "Value"])
@@ -91,12 +89,8 @@ class ProductDisplayVisitor(ProductVisitor):
         self.nvps_.append(["Pay Or Receive", product.pay_or_rec.to_string().upper()])
         self.nvps_.append(["Accrual Period", product.accrual_period.__str__()])
         self.nvps_.append(["Accrual Basis", product.accrual_basis.value_str])
-        self.nvps_.append(
-            ["Floating Leg Accrual Period", product.floating_leg_accrual_period.__str__()]
-        )
-        self.nvps_.append(
-            ["Business Day Convention", product.pay_business_day_convention.value_str]
-        )
+        self.nvps_.append(["Floating Leg Accrual Period", product.floating_leg_accrual_period.__str__()])
+        self.nvps_.append(["Business Day Convention", product.pay_business_day_convention.value_str])
         self.nvps_.append(["Holiday Convention", product.pay_holiday_convention.value_str])
         self.nvps_.append(["Compounding Method", product.compounding_method.to_string()])
 
@@ -113,9 +107,7 @@ class ProductDisplayVisitor(ProductVisitor):
         self.nvps_.append(["Accrual Period Leg 1", product.accrual_period_leg_1.__str__()])
         self.nvps_.append(["Accrual Period Leg 2", product.accrual_period_leg_2.__str__()])
         self.nvps_.append(["Accrual Basis", product.accrual_basis.value_str])
-        self.nvps_.append(
-            ["Business Day Convention", product.pay_business_day_convention.value_str]
-        )
+        self.nvps_.append(["Business Day Convention", product.pay_business_day_convention.value_str])
         self.nvps_.append(["Holiday Convention", product.pay_holiday_convention.value_str])
         self.nvps_.append(["Compounding Method", product.compounding_method.to_string()])
 
@@ -128,7 +120,7 @@ class ProductDisplayVisitor(ProductVisitor):
 
     @visit.register
     def _(self, product: ProductPortfolio):
-        self.nvps_.append(["Product Type", product.product_type])
+        self.nvps_ = [["Product Type", product.product_type]]
         for i in range(product.num_elemnts):
             self.nvps_.append([f"Product {i} Type", product.element(i).product_type])
             self.nvps_.append([f"Product {i} Weight", product.weight(i)])
@@ -140,15 +132,13 @@ class ProductDisplayVisitor(ProductVisitor):
         self.nvps_.append(["Index", product.fx_pair.name()])
         self.nvps_.append(["PayOrRec", product.pay_or_rec.to_string().upper()])
         self.nvps_.append(["Strike", product.strike])
-        self.nvps_.append(
-            ["Payment Business Day Convention", product.pay_business_day_convention.value_str]
-        )
+        self.nvps_.append(["Payment Business Day Convention", product.pay_business_day_convention.value_str])
         self.nvps_.append(["Payment Holiday Convention", product.pay_holidays.value_str])
         self.nvps_.append(["Payment Offset", product.pay_offset.__str__()])
 
     @visit.register
     def _(self, product: ProductBond):
-        # bond-level info
+        self.nvps_ = []
         self.nvps_.append(["Product Type", product.product_type])
         self.nvps_.append(["ISIN", product.isin])
         self.nvps_.append(["Bond Convention", product.bond_convention])
@@ -161,7 +151,6 @@ class ProductDisplayVisitor(ProductVisitor):
         self.nvps_.append(["Trade Date", product.trade_date.ISO()])
         self.nvps_.append(["Settlement Date", product.settlement_date.ISO()])
         self.nvps_.append(["Buy/Sell", product.buy_sell.to_string().upper()])
-        # cashflow breakdown
         self.nvps_.append(["Num Cashflows", product.num_cashflows()])
         for i in range(product.num_cashflows()):
             self.nvps_.append([f"Cashflow {i} Type", product.cashflow(i).product_type])
@@ -184,14 +173,20 @@ class ProductDisplayVisitor(ProductVisitor):
     @visit.register
     def _(self, product: ProductRFRCapFloor):
         self._common_items(product)
-        # TODO:
-        # Append the main name-value pairs for ProductRFRCapFloor.
-        #
-        # Hint:
-        # - Include key dates and contract terms
-        # - You may reuse existing product properties directly
-        # - The number of caplets can be obtained from the product itself
-
-        # self.nvps_.append([...])
-        # self.nvps_.append([...])
-        # ...
+        self.nvps_.append(["Effective Date", product.effective_date.ISO()])
+        self.nvps_.append(["Termination Date", product.termination_date.ISO()])
+        self.nvps_.append(["ON Index", product.on_index.name()])
+        self.nvps_.append(["Strike", product.strike])
+        self.nvps_.append(["Cap Or Floor", product.cap_or_floor.to_string().upper()])
+        self.nvps_.append(["Accrual Period", str(product.accrual_period)])
+        self.nvps_.append(["Accrual Basis", product.accrual_basis.value_str])
+        self.nvps_.append(["Payment Offset", str(product.payment_offset)])
+        self.nvps_.append([
+            "Payment Business Day Convention",
+            product.payment_business_day_convention.value_str,
+        ])
+        self.nvps_.append([
+            "Payment Holiday Convention",
+            product.payment_holiday_convention.value_str,
+        ])
+        self.nvps_.append(["Number of Caplets", product.num_caplets()])
